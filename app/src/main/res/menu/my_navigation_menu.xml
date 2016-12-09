@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/btn_game"
+        android:icon="@mipmap/p2"
+        android:title="Game"/>
+    <item android:id="@+id/btm_movie"
+        android:icon="@mipmap/p3"
+        android:title="Movie"/>
+    <item android:id="@+id/btn_music"
+        android:icon="@mipmap/p7"
+        android:title="Music"/>
+    <item android:id="@+id/btm_book"
+        android:icon="@mipmap/p9"
+        android:title="Book"/>
+</menu>

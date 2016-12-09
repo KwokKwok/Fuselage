@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.v7.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:fresco="http://schemas.android.com/apk/res-auto"
+    fresco:cardCornerRadius="2dp"
+    fresco:cardElevation="2dp"
+    fresco:cardPreventCornerOverlap="false"
+    fresco:contentPadding="0dp"
+    style="@style/card_base">
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:id="@+id/zhihu_item_img_ll"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <com.facebook.drawee.view.SimpleDraweeView
+            android:padding="10dp"
+            android:id="@+id/zhihu_item_img_img"
+            android:scaleType="centerInside"
+            android:layout_height="80dp"
+            android:layout_width="80dp"
+            fresco:placeholderImage="@mipmap/ic_launcher"
+            />
+        <TextView
+            android:id="@+id/zhihu_item_img_text"
+            style="@style/text_base" />
+
+    </LinearLayout>
+
+</android.support.v7.widget.CardView>

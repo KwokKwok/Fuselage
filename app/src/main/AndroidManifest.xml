@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.kwokstudio.fuselage">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!--频道管理-->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!--监测网络-->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!--联系人-->
+    <uses-permission   android:name="android.permission.READ_CONTACTS"/>
+    <uses-permission android:name="android.permission.CALL_PHONE"/>
+
+    <application
+        android:name=".MyApp"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:hardwareAccelerated="true"
+        android:theme="@style/AppTheme">
+        <activity
+            android:name=".MainActivity"
+            android:launchMode="singleTask"
+            android:theme="@style/AppTheme" />
+        <activity
+            android:name=".SplashActivity"
+            android:label="@string/app_name"
+            android:theme="@style/splash">
+            <intent-filter android:priority="1000">
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".TextContentActivity"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/AppBaseTheme" />
+        <activity
+            android:name=".SubjectActivity"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/AppBaseTheme" />
+    </application>
+
+</manifest>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_read"
+            android:icon="@mipmap/read"
+            android:title="知乎日报" />
+        <item
+            android:id="@+id/nav_rss"
+            android:icon="@mipmap/rss"
+            android:title="RSS" />
+        <item
+            android:id="@+id/nav_index"
+            android:icon="@mipmap/index"
+            android:title="索引" />
+        <item
+            android:id="@+id/nav_btm_nav"
+            android:icon="@mipmap/nav"
+            android:title="底部导航" />
+    </group>
+
+</menu>

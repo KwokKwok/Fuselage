@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#00BBD2</color>
+    <color name="colorPrimaryDark">#0097A7</color>
+    <color name="colorAccent">#FF4081</color>
+
+    <!--一个Color数组-->
+    <color name="c0">#FF0277BD</color>
+    <color name="c1">#FF0A8F08</color>
+    <color name="c2">#FF5677FC</color>
+    <color name="c3">#FFE51C23</color>
+    <color name="c4">#FF8BC34A</color>
+    <color name="c5">#FFF4511E</color>
+    <color name="c6">#FF00BCD4</color>
+    <color name="c7">#FF004D40</color>
+
+</resources>
