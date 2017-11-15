@@ -1,3 +1,4 @@
+``` XML
 apply plugin: 'com.android.application'
 
 def releaseTime() {
@@ -96,3 +97,4 @@ dependencies {
     compile 'com.jakewharton:butterknife:6.0.0'
     ...
 }
+```
