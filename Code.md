@@ -1,389 +1,194 @@
-## Vue选项
+# Vue-router
 
-### propsData，Vue.extend的数据传递
+重点：
 
-先在HTML里写一个自定义标签
+1. `<router-link to="path">链接名字</router-link>`
+1. `<router-view>`
+1. `components`目录下添加组件模板
+1. 修改`router/index.js`
+    1. `children`数组
 
-```html
-<gl></gl>
-```
+参数传递：
 
-写一个扩展，注意写上`props`（*数组*），写上我们要用到的属性。
-
-然后挂载，注意构造的时候传的是一个对象，对象里需要再声明一个`propsData`的对象，在`propsData`里写上我们要设置的属性和值。
-
-```js
-var gl = Vue.extend({
-  template: `<h1>{{msg}}</h1>`,
-  props: ['msg']
-})
-
-new gl({ propsData: { msg: '郭垒很帅' } }).$mount('gl');
-```
-
-结果：
-
-```html
-<h1>郭垒很帅</h1>
-```
-
-### computed，计算属性
-
-> [计算属性](https://cn.vuejs.org/v2/guide/computed.html#%E8%AE%A1%E7%AE%97%E5%B1%9E%E6%80%A7)
-
-划重点：
-
-1. 计算属性使用起来和普通属性一致
-1. 计算属性会随着被其依赖的属性的改变而改变。
-    > 阅读理解：*"我们已经以声明的方式创建了这种依赖关系：计算属性的 getter 函数是没有副作用 (side effect) 的，这使它更易于测试和理解。"*
-1. 计算属性是有缓存的，只有在依赖改变的时候才会重新求值。如果没有依赖**响应式依赖**，则计算属性的值不会更新。[计算属性缓存 vs 方法](https://cn.vuejs.org/v2/guide/computed.html#%E8%AE%A1%E7%AE%97%E5%B1%9E%E6%80%A7%E7%BC%93%E5%AD%98-vs-%E6%96%B9%E6%B3%95)
-1. 如果一些数据需要随着其他数据的变化而变化，请使用计算属性，而不要使用`watch`。[计算属性 vs 侦听属性](https://cn.vuejs.org/v2/guide/computed.html#%E8%AE%A1%E7%AE%97%E5%B1%9E%E6%80%A7-vs-%E4%BE%A6%E5%90%AC%E5%B1%9E%E6%80%A7)
-1. 计算属性默认只有`getter`，如果需要，也可以提供`setter`
-    ```js
-    computed: {
-        fullName: {
-            // getter
-            get: function () {
-                return this.firstName + ' ' + this.lastName
-            },
-            // setter
-            set: function (newValue) {
-                var names = newValue.split(' ')
-                this.firstName = names[0]
-                this.lastName = names[names.length - 1]
-            }
-        }
-    }
-    ```
-
-简单示例如下：
-
-```html
-<h1>{{msg}}</h1>
-```
-
-```js
-data: {
-    name: '郭垒'
-},
-computed: {
-    msg() {
-        return this.name + "很帅"
-    }
-}
-```
-
-### mothods，如何调用及传参
-
-1. 普通调用，`@click='add'`
-1. 获取原生事件，`@click='add'`，方法定义`add(enent){}`
-1. 需要传递参数，`@click='add(3)'`，方法定义`add(num){}`
-1. 需要传递参数同时也要获取事件，可以使用`$event`参数，`@click='add(3,$event)'`，方法定义`add(num,event){}`
-1. 组件调用Vue实例的方法，`@click.native='add'`，如下：
+1. 通过`{{$route.name}}`可以访问路由页面的`name`属性
+1. 通过`params`对象，注意`:to`是绑定语法
     ```html
-    <div id="app">
-        <h1>{{count}}</h1>
-        <btn @click.native="add" btn-name='Add'></btn>
-    </div>
+    <router-link :to="{name:'route-a',params:{username:'郭垒'}}">To RouteA</router-link>`
+    ```
+    ```html
+    <!--Vue文件内。-->
+    <template>
+        <div>
+            <p>{{$route.params.username}}</p>
+        </div>
+    </template>
+    ```
+1. 通过URL传值
+    ```html
+    <router-link to="/pages/1234/gl" >页面A</router-link>
     ```
     ```js
-    var btn = {
-        template: `<button>{{btnName}}</button>`,
-        props: ['btnName']
-    }
-
-    var app = new Vue({
-        el: '#app',
-        data: {
-            count: 0,
-        },
-        methods: {
-            add(event) {
-                this.count += 1;
-                console.log(event)
-            }
-        },
-        components: {
-            'btn': btn
-        }
-    })
+    //router/index.js中设置页面路径
+    //path使用':'加参数名，可有多个参数
+    path: ':id(\\d+)/:name'
+    ```
+    ```html
+    <!--页面的.vue文件-->
+    <template>
+        <div>
+            <p>{{$route.params.id}}</p>
+            <p>{{$route.params.name}}</p>
+        </div>
+    </template>
     ```
 
-### watch，侦听器
+单页面多**路由区域**
 
-> [侦听器](https://cn.vuejs.org/v2/guide/computed.html#%E4%BE%A6%E5%90%AC%E5%99%A8)
+> 再理解理解
 
-基本用法就是在watch块内为你要观察的数据，写一个方法。
-
-```js
-var app = new Vue({
-  el: '#app',
-  data: {
-    count: 0,
-  },
-  methods: {
-    add() {
-      this.count += 1;
-    }
-  },
-  watch: {
-    count() {
-      console.log(this.count);
-    }
-  }
-})
+```html
+<router-view/>
+<router-view name="route1"/>
+<router-view name="route2"/>
 ```
 
-也可以写在Vue实例外部，使用`vm.$watch API`：
-
 ```js
-
-var app = new Vue({
-  el: '#app',
-  data: {
-    count: 0,
-  },
-  methods: {
-    add() {
-      this.count += 1;
-    }
-  },
-})
-
-//vm.$watch(prop,func)
-app.$watch('count', () => { console.log(app.count) })
-```
-
-### mixins，混入
-
-> 可以理解为通用方法提取。[Mixin文档](https://cn.vuejs.org/v2/guide/mixins.html)，*"混入对象可以包含任意组件选项。当组件使用混入对象时，所有混入对象的选项将被混入该组件本身的选项。"*
-
-例子：
-
-```js
-// 定义一个混入对象
-var myMixin = {
-  created: function () {
-    this.hello()
-  },
-  methods: {
-    hello: function () {
-      console.log('hello from mixin!')
-    }
-  }
-}
-
-// 定义一个使用混入对象的组件
-var Component = Vue.extend({
-  mixins: [myMixin]
-})
-
-var component = new Component() // => "hello from mixin!"
-```
-
-划重点：
-
-1. 可以包含**任意组件选项**。意味着，你在构造Vue实例时使用的`data`、`methods`、以及`生命周期钩子函数`都可以使用。
-1. 你写在Mixin对象中的选项**会添加到**使用该Minin对象的Vue实例的选项中。
-1. 合并。
-    - `data`，数据对象会重新进行组合，包含所有的数据。如果有冲突，保留组件(*Vue实例*)的数据
-    - `钩子函数`，合并成数组，混入对象的钩子**在前**，依次被调用。
-    - 值为对象的选项，`methods`、`components`和`directives`，会被混合成一个对象，冲突的属性，只保留组件的内容。逻辑和`data`类似。(*注意在两个`methods`里声明了同名方法，只会保留Vue实例的方法，而不是像钩子函数一样，都被调用*)
-1. [全局混入](https://cn.vuejs.org/v2/guide/mixins.html#%E5%85%A8%E5%B1%80%E6%B7%B7%E5%85%A5)，会自动影响到所有之后创建的Vue实例。另外可参考[自定义选项合并策略](https://cn.vuejs.org/v2/guide/mixins.html#%E8%87%AA%E5%AE%9A%E4%B9%89%E9%80%89%E9%A1%B9%E5%90%88%E5%B9%B6%E7%AD%96%E7%95%A5)
-    ```js
-    // 为自定义的选项 'myOption' 注入一个处理器。
-    Vue.mixin({
-        created: function () {
-            var myOption = this.$options.myOption
-            if (myOption) {
-                console.log(myOption)
-            }
-        }
-    })
-
-    new Vue({
-        myOption: 'hello!'
-    })
-    // => "hello!"
-    ```
-
-### extends，扩展
-
-> 允许声明扩展另一个组件(可以是一个简单的选项对象或构造函数)，而无需使用 Vue.extend。这主要是为了便于扩展单文件组件。和`mixins`类似。
-
-```js
-var CompA = { ... }
-
-// 在没有调用 `Vue.extend` 时候继承 CompA
-var CompB = {
-  extends: CompA,
-  ...
+components: {
+    default: Hi,
+    route1: routeA,
+    route2: routeB
 }
 ```
 
-### delimiters，配置插值形式
+## 重定向和别名
 
-> 改变纯文本插入分隔符。只在完整构建版本中的浏览器内编译时可用。
+> [文档](https://router.vuejs.org/zh-cn/essentials/redirect-and-alias.html)
 
-比如，如果你想要替换`{{}}`为`${}`：
+### redirect 重定向
+
+1. 基本重定向，在`router/index.js`中写路由时，将`components`替换为`redirect：'path'`
+1. 重定向传参，可以利用`URL`的方式：
+    ```js
+    {
+        //以to访问的时候，可以获取到number值
+        path: 'redirect/:number(\\d+)',
+        name: 'redirect',
+        //以number值为路径做重定向，会重定向到下面的IdPage
+        redirect: ':number'
+    }, {
+        path: ':id(\\d+)',
+        component: IdPage
+    }
+    ```
+
+### alias 别名
 
 ```js
-new Vue({
-  delimiters: ['${', '}']
+routes: [
+    { path: '/a', component: A, alias: '/b' }
+]
+```
+
+/a 的别名是 /b，意味着，当用户访问 /b 时，URL 会保持为 /b，但是路由匹配则为 /a，就像用户访问 /a 一样。
+
+同样是页面改变：
+
+- 重定向会修改路径
+- 别名路径不变
+
+## 路由的mode和404页面
+
+路由mode：
+
+- `history`，不显示`#`
+- `hash`，显示`#`
+
+```js
+export default new Router({
+  mode: 'history',
+  routes: [
+    {
+      path: '/',
+      name: 'HelloWorld',
+      component: HelloWorld
+    }
+  ]
 })
 ```
 
-## 其他
+404页面：添加一个路由项，`path: '*'`即可。
 
-### 和jQuery一起使用。
+## 路由钩子函数
 
-引入jQuery之后，就可以和jQuery一起使用了。
+### 在路由注册文件中写
 
-另外在`.vue`文件使用jQuery：
+只能写`beforeEnter`
 
-1. `npm install jquery`
-1. `import $ from 'jquery'`
-
-### 生命周期相关的实例方法
-
-> [实例方法 / 生命周期](https://cn.vuejs.org/v2/api/#%E5%AE%9E%E4%BE%8B%E6%96%B9%E6%B3%95-%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F)
-
-- [`vm.$mount(el)`](https://cn.vuejs.org/v2/api/#vm-mount)，如果已经设置了`el`，再调用`vm.$mount()`则不会有效果。*注：可以通过`vm.$el`访问实例的`el`属性*
-- [`vm.$nextTick()`](https://cn.vuejs.org/v2/api/#vm-nextTick)，修改完数据后，DOM可能还没有更新。和全局方法`Vue.nextTick()`的区别是，可以使用`this`自动指向调用它的Vue实例。这个回调会在下**一次DOM更新**后调用。只是一次。
-    ```js
-    new Vue({
-        // ...
-        methods: {
-            // ...
-            example: function () {
-            // 修改数据
-            this.message = 'changed'
-            // DOM 还没有更新
-            this.$nextTick(function () {
-                // DOM 现在更新了
-                // `this` 绑定到当前实例
-                this.doSomethingElse()
-            })
-            }
-        }
-    })
-    ```
-- [`vm.$destory()`](https://cn.vuejs.org/v2/api/#vm-destroy)，见名知意，一般用不到。
-- [`vm.$forceUpdate()`](https://cn.vuejs.org/v2/api/#vm-forceUpdate)，强制刷新。
-
-### 事件相关的实例方法
-
-> [实例方法/事件](https://cn.vuejs.org/v2/api/#%E5%AE%9E%E4%BE%8B%E6%96%B9%E6%B3%95-%E4%BA%8B%E4%BB%B6)
-
-- [`vm.$on(event,callback)`](https://cn.vuejs.org/v2/api/#vm-on)，监听当前实例的自定义事件，事件可以由`vm.$emit()`触发。事件参数会传入到回调函数中。
-    ```js
-    vm.$on('test', function (msg) {
-        console.log(msg)
-    })
-    vm.$emit('test', 'hi')
-    // => "hi"
-    ```
-- [`vm.$emit(event,[…args])`](https://cn.vuejs.org/v2/api/#vm-emit)，触发当前实例上的事件。附加参数会传给监听器回调。
-- [`vm.$off([event,callback])`](https://cn.vuejs.org/v2/api/#vm-off)，移除自定义事件监听器。
-  - 没参数，移除所有。
-  - 只提供事件，移除该事件所有的监听器。
-  - 提供事件和回调，移除指定监听器。
-- [`vm.$once(event,callback)`](https://cn.vuejs.org/v2/api/#vm-once)，监听自定义事件，只触发一次，触发完成后移除监听器。
-
-### slot插槽
-
-> [插槽](https://cn.vuejs.org/v2/guide/components.html#%E4%BD%BF%E7%94%A8%E6%8F%92%E6%A7%BD%E5%88%86%E5%8F%91%E5%86%85%E5%AE%B9)，插槽可以看作是占位符，插槽内的内容只有**无要插入内容**时才会显示。
-
-`my-component`组件模板：
-
-```html
-<div>
-  <h2>我是子组件的标题</h2>
-  <slot>
-    只有在没有要分发的内容时才会显示。
-  </slot>
-</div>
+```js
+export default new Router({
+  mode: 'history',
+  routes: [
+    {
+      path: '/',
+      name: 'HelloWorld',
+      component: HelloWorld,
+      beforeEnter(to, from, next) {
+        console.log(to); //to是一个对象，这里是当前的
+        console.log(from); //from也是一个对象，指示从哪来的
+        console.log(next); //next是一个函数，指示是否跳转
+        next(); //跳转，如果不写相当于next(false)，不跳转
+      }
+    },
+})
 ```
 
-父组件模板：
+### 在路由页面写
 
-```html
-<div>
-  <h1>我是父组件的标题</h1>
-  <my-component>
-    <p>这是一些初始内容</p>
-    <p>这是更多的初始内容</p>
-  </my-component>
-</div>
+比如`Hi.vue`:
+
+```js
+<script>
+export default {
+  name: "Hi",
+  data() {
+    return {
+      msg: "Hello router"
+    };
+  },
+  beforeRouteEnter(to, from, next) {
+    console.log(to, from, next);
+    next();
+  },
+  beforeRouteLeave(to, from, next) {
+    console.log(to, from, next);
+    next();
+  }
+};
+</script>
 ```
 
-渲染结果：
+注意：都是写了`next()`才能正常跳转。
 
-```html
-<div>
-  <h1>我是父组件的标题</h1>
-  <div>
-    <h2>我是子组件的标题</h2>
-    <p>这是一些初始内容</p>
-    <p>这是更多的初始内容</p>
-  </div>
-</div>
+## 代码跳转
+
+```js
+<script>
+export default {
+  name: "App",
+  methods: {
+    go() {
+      //向前
+      this.$router.go(1);
+    },
+    back() {
+      //向后
+      this.$router.go(-1);
+    },
+    home() {
+      //跳转到指定页
+      this.$router.push("/");
+    }
+  }
+};
+</script>
 ```
-
-还可以插入到指定位置，称为[具名插槽](https://cn.vuejs.org/v2/guide/components.html#%E5%85%B7%E5%90%8D%E6%8F%92%E6%A7%BD)：
-
-`app-layout`组件模板：
-
-```html
-<div class="container">
-  <header>
-    <slot name="header"></slot>
-  </header>
-  <main>
-    <slot></slot>
-  </main>
-  <footer>
-    <slot name="footer"></slot>
-  </footer>
-</div>
-```
-
-父组件模板：
-
-```html
-<app-layout>
-  <h1 slot="header">这里可能是一个页面标题</h1>
-
-  <p>主要内容的一个段落。</p>
-  <p>另一个主要段落。</p>
-
-  <p slot="footer">这里有一些联系信息</p>
-</app-layout>
-```
-
-渲染结果：
-
-```html
-<div class="container">
-  <header>
-    <h1>这里可能是一个页面标题</h1>
-  </header>
-  <main>
-    <p>主要内容的一个段落。</p>
-    <p>另一个主要段落。</p>
-  </main>
-  <footer>
-    <p>这里有一些联系信息</p>
-  </footer>
-</div>
-```
-
-另外，[作用域插槽](https://cn.vuejs.org/v2/guide/components.html#%E4%BD%9C%E7%94%A8%E5%9F%9F%E6%8F%92%E6%A7%BD)先留着。
-
-## 过渡动画
-
-动画
-
-- [进入/离开 & 列表过渡](https://cn.vuejs.org/v2/guide/transitions.html)
-  - `<transition>`标签包裹，注意`name`和`mode`属性
-- [状态过渡](https://cn.vuejs.org/v2/guide/transitioning-state.html)
