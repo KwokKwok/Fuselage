@@ -1,452 +1,389 @@
-> 通过一些接触，Vue简单说就是管理指定界面(*`el`*)对应的数据(*`data`*)和行为(*`methods`*)，是一个典型的`ViewModel`实现。
+## Vue选项
 
-## 内部指令
+### propsData，Vue.extend的数据传递
 
-1. `v-if`
-    ```html
-    <p v-if="!shouldShow">{{msg}}</p>
+先在HTML里写一个自定义标签
+
+```html
+<gl></gl>
+```
+
+写一个扩展，注意写上`props`（*数组*），写上我们要用到的属性。
+
+然后挂载，注意构造的时候传的是一个对象，对象里需要再声明一个`propsData`的对象，在`propsData`里写上我们要设置的属性和值。
+
+```js
+var gl = Vue.extend({
+  template: `<h1>{{msg}}</h1>`,
+  props: ['msg']
+})
+
+new gl({ propsData: { msg: '郭垒很帅' } }).$mount('gl');
+```
+
+结果：
+
+```html
+<h1>郭垒很帅</h1>
+```
+
+### computed，计算属性
+
+> [计算属性](https://cn.vuejs.org/v2/guide/computed.html#%E8%AE%A1%E7%AE%97%E5%B1%9E%E6%80%A7)
+
+划重点：
+
+1. 计算属性使用起来和普通属性一致
+1. 计算属性会随着被其依赖的属性的改变而改变。
+    > 阅读理解：*"我们已经以声明的方式创建了这种依赖关系：计算属性的 getter 函数是没有副作用 (side effect) 的，这使它更易于测试和理解。"*
+1. 计算属性是有缓存的，只有在依赖改变的时候才会重新求值。如果没有依赖**响应式依赖**，则计算属性的值不会更新。[计算属性缓存 vs 方法](https://cn.vuejs.org/v2/guide/computed.html#%E8%AE%A1%E7%AE%97%E5%B1%9E%E6%80%A7%E7%BC%93%E5%AD%98-vs-%E6%96%B9%E6%B3%95)
+1. 如果一些数据需要随着其他数据的变化而变化，请使用计算属性，而不要使用`watch`。[计算属性 vs 侦听属性](https://cn.vuejs.org/v2/guide/computed.html#%E8%AE%A1%E7%AE%97%E5%B1%9E%E6%80%A7-vs-%E4%BE%A6%E5%90%AC%E5%B1%9E%E6%80%A7)
+1. 计算属性默认只有`getter`，如果需要，也可以提供`setter`
+    ```js
+    computed: {
+        fullName: {
+            // getter
+            get: function () {
+                return this.firstName + ' ' + this.lastName
+            },
+            // setter
+            set: function (newValue) {
+                var names = newValue.split(' ')
+                this.firstName = names[0]
+                this.lastName = names[names.length - 1]
+            }
+        }
+    }
     ```
-1. `v-show`
-    ```html
-    <p v-show="5>3">{{msg}}</p>
-    ```
-    > 注意`v-if`和`v-show`的差别，`v-if='false'`的情况下，元素不会被包含在`html`文档中，相比之下`v-show='false'`只是设置了`style="display: none;"`
-1. `v-for`
-    ```html
-    <p v-for="item in items">{{item.content}}</p>
 
-    <!--如果需要使用索引-->
-    <p v-for="(item,index) in items">{{item.content}}</p>
+简单示例如下：
+
+```html
+<h1>{{msg}}</h1>
+```
+
+```js
+data: {
+    name: '郭垒'
+},
+computed: {
+    msg() {
+        return this.name + "很帅"
+    }
+}
+```
+
+### mothods，如何调用及传参
+
+1. 普通调用，`@click='add'`
+1. 获取原生事件，`@click='add'`，方法定义`add(enent){}`
+1. 需要传递参数，`@click='add(3)'`，方法定义`add(num){}`
+1. 需要传递参数同时也要获取事件，可以使用`$event`参数，`@click='add(3,$event)'`，方法定义`add(num,event){}`
+1. 组件调用Vue实例的方法，`@click.native='add'`，如下：
+    ```html
+    <div id="app">
+        <h1>{{count}}</h1>
+        <btn @click.native="add" btn-name='Add'></btn>
+    </div>
     ```
     ```js
-    //在data属性内
-    items: [
-      { content: '第一个元素' },
-      { content: '第二个元素' },
-      { content: '第三个元素' },
-    ]
-    ```
-    ```html
-    <!--生成结果-->
-    <p>第一个元素</p>
-    <p>第二个元素</p>
-    <p>第三个元素</p>
-    ```
-    > `v-for`可以理解成，把我们写的html作为一份模板，以数组的**每个子元素**作为**数据**生成多个HTML元素。
-1. 计算属性
-    ```html
-    <!--修改一下数据源-->
-    <p v-for="item in sortedItems">{{item}}</p>
-    ```
-    ```js
-    //修改数据源并实现倒叙排列数据
-    new Vue({
+    var btn = {
+        template: `<button>{{btnName}}</button>`,
+        props: ['btnName']
+    }
+
+    var app = new Vue({
         el: '#app',
         data: {
-            items: [
-                1,5,2,6,3,4,7,10,9
-            ]
+            count: 0,
         },
-        computed: {
-            sortedItems() {
-                return this.items.sort((a, b) => b - a)
+        methods: {
+            add(event) {
+                this.count += 1;
+                console.log(event)
+            }
+        },
+        components: {
+            'btn': btn
+        }
+    })
+    ```
+
+### watch，侦听器
+
+> [侦听器](https://cn.vuejs.org/v2/guide/computed.html#%E4%BE%A6%E5%90%AC%E5%99%A8)
+
+基本用法就是在watch块内为你要观察的数据，写一个方法。
+
+```js
+var app = new Vue({
+  el: '#app',
+  data: {
+    count: 0,
+  },
+  methods: {
+    add() {
+      this.count += 1;
+    }
+  },
+  watch: {
+    count() {
+      console.log(this.count);
+    }
+  }
+})
+```
+
+也可以写在Vue实例外部，使用`vm.$watch API`：
+
+```js
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    count: 0,
+  },
+  methods: {
+    add() {
+      this.count += 1;
+    }
+  },
+})
+
+//vm.$watch(prop,func)
+app.$watch('count', () => { console.log(app.count) })
+```
+
+### mixins，混入
+
+> 可以理解为通用方法提取。[Mixin文档](https://cn.vuejs.org/v2/guide/mixins.html)，*"混入对象可以包含任意组件选项。当组件使用混入对象时，所有混入对象的选项将被混入该组件本身的选项。"*
+
+例子：
+
+```js
+// 定义一个混入对象
+var myMixin = {
+  created: function () {
+    this.hello()
+  },
+  methods: {
+    hello: function () {
+      console.log('hello from mixin!')
+    }
+  }
+}
+
+// 定义一个使用混入对象的组件
+var Component = Vue.extend({
+  mixins: [myMixin]
+})
+
+var component = new Component() // => "hello from mixin!"
+```
+
+划重点：
+
+1. 可以包含**任意组件选项**。意味着，你在构造Vue实例时使用的`data`、`methods`、以及`生命周期钩子函数`都可以使用。
+1. 你写在Mixin对象中的选项**会添加到**使用该Minin对象的Vue实例的选项中。
+1. 合并。
+    - `data`，数据对象会重新进行组合，包含所有的数据。如果有冲突，保留组件(*Vue实例*)的数据
+    - `钩子函数`，合并成数组，混入对象的钩子**在前**，依次被调用。
+    - 值为对象的选项，`methods`、`components`和`directives`，会被混合成一个对象，冲突的属性，只保留组件的内容。逻辑和`data`类似。(*注意在两个`methods`里声明了同名方法，只会保留Vue实例的方法，而不是像钩子函数一样，都被调用*)
+1. [全局混入](https://cn.vuejs.org/v2/guide/mixins.html#%E5%85%A8%E5%B1%80%E6%B7%B7%E5%85%A5)，会自动影响到所有之后创建的Vue实例。另外可参考[自定义选项合并策略](https://cn.vuejs.org/v2/guide/mixins.html#%E8%87%AA%E5%AE%9A%E4%B9%89%E9%80%89%E9%A1%B9%E5%90%88%E5%B9%B6%E7%AD%96%E7%95%A5)
+    ```js
+    // 为自定义的选项 'myOption' 注入一个处理器。
+    Vue.mixin({
+        created: function () {
+            var myOption = this.$options.myOption
+            if (myOption) {
+                console.log(myOption)
+            }
+        }
+    })
+
+    new Vue({
+        myOption: 'hello!'
+    })
+    // => "hello!"
+    ```
+
+### extends，扩展
+
+> 允许声明扩展另一个组件(可以是一个简单的选项对象或构造函数)，而无需使用 Vue.extend。这主要是为了便于扩展单文件组件。和`mixins`类似。
+
+```js
+var CompA = { ... }
+
+// 在没有调用 `Vue.extend` 时候继承 CompA
+var CompB = {
+  extends: CompA,
+  ...
+}
+```
+
+### delimiters，配置插值形式
+
+> 改变纯文本插入分隔符。只在完整构建版本中的浏览器内编译时可用。
+
+比如，如果你想要替换`{{}}`为`${}`：
+
+```js
+new Vue({
+  delimiters: ['${', '}']
+})
+```
+
+## 其他
+
+### 和jQuery一起使用。
+
+引入jQuery之后，就可以和jQuery一起使用了。
+
+另外在`.vue`文件使用jQuery：
+
+1. `npm install jquery`
+1. `import $ from 'jquery'`
+
+### 生命周期相关的实例方法
+
+> [实例方法 / 生命周期](https://cn.vuejs.org/v2/api/#%E5%AE%9E%E4%BE%8B%E6%96%B9%E6%B3%95-%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F)
+
+- [`vm.$mount(el)`](https://cn.vuejs.org/v2/api/#vm-mount)，如果已经设置了`el`，再调用`vm.$mount()`则不会有效果。*注：可以通过`vm.$el`访问实例的`el`属性*
+- [`vm.$nextTick()`](https://cn.vuejs.org/v2/api/#vm-nextTick)，修改完数据后，DOM可能还没有更新。和全局方法`Vue.nextTick()`的区别是，可以使用`this`自动指向调用它的Vue实例。这个回调会在下**一次DOM更新**后调用。只是一次。
+    ```js
+    new Vue({
+        // ...
+        methods: {
+            // ...
+            example: function () {
+            // 修改数据
+            this.message = 'changed'
+            // DOM 还没有更新
+            this.$nextTick(function () {
+                // DOM 现在更新了
+                // `this` 绑定到当前实例
+                this.doSomethingElse()
+            })
             }
         }
     })
     ```
-1. `v-text`和`v-html`，如果按照上边的方式直接使用`{{}}`，则在对应的script没有被执行到的时候，会先显示`{{balabala}}`。这种情况可以通过指定属性解决，就是`v-text`和`v-html`解决。(*还有一种解决方式`v-cloak`，后续会提到*)
-    ```html
-    <!--使用v-text和使用{{}}效果一致，都是将内容解析为纯文本-->
-    <p v-for="item in items" v-text="item"></p>
+- [`vm.$destory()`](https://cn.vuejs.org/v2/api/#vm-destroy)，见名知意，一般用不到。
+- [`vm.$forceUpdate()`](https://cn.vuejs.org/v2/api/#vm-forceUpdate)，强制刷新。
 
-    <!--如果需要解析HTML文本，就不能使用{{}}，此时需要使用v-html-->
-    <p v-for="item in items" v-html="item"></p>
-    ```
-1. `v-model`，数据绑定。界面对数据的改动，会同步修改js中的属性值。适用于各种`input`。
-    > 使用上和`v-text`使用一样，可以理解为`v-model`是`v-text`加上了一个**修改事件监听**，在监听到改动的时候，会去修改对应的`data`中的值。
+### 事件相关的实例方法
 
-    修饰符：
-    - `v-model.lazy`，失去焦点后改变。
-    - `v-model.number`，先输入数字，之后输入字符串则不计算。如果先输入字符串的话，就没卵用。
-    - `v-model.trim`，前后空格不计算。
-1. `v-on`事件监听，简写方式: `@`
-    ```html
-    <input type="text" v-model="count" @keyup.enter="onEnter">
-    </input>
-    <button @click="goUp">Up</button>
-    <button @click="goDown">Down</button>
-    ```
+> [实例方法/事件](https://cn.vuejs.org/v2/api/#%E5%AE%9E%E4%BE%8B%E6%96%B9%E6%B3%95-%E4%BA%8B%E4%BB%B6)
+
+- [`vm.$on(event,callback)`](https://cn.vuejs.org/v2/api/#vm-on)，监听当前实例的自定义事件，事件可以由`vm.$emit()`触发。事件参数会传入到回调函数中。
     ```js
-    data: {
-        count: 0
-    },
-
-    //注意这个方法，event是原生的DOM事件
-    onEnter(event) {
-      event.target.blur();
-      setTimeout(() => {
-        alert(this.count);
-      }, 0);
-    },
-    goUp() {
-      this.count = Number(this.count) + 1;
-    },
-    goDown() {
-      this.count = Number(this.count) + 1;
-    }
+    vm.$on('test', function (msg) {
+        console.log(msg)
+    })
+    vm.$emit('test', 'hi')
+    // => "hi"
     ```
-1. `v-bind`，绑定标签上的属性。简写方式： `:`
-    ```html
-    <img :src="vueLogo">
-    ```
-    ```js
-    data: {
-        vueLogo: require("./assets/logo.png"),
-        //之后需要用到的
-        isClassA: false,
-        classNameA: 'classA',
-        classNameB: 'classB',
-        colorName: 'blue',
-        styleObj: {
-            color: 'red',
-            fontFamily: 'Century Gothic'
-        }
-    },
-    ```
+- [`vm.$emit(event,[…args])`](https://cn.vuejs.org/v2/api/#vm-emit)，触发当前实例上的事件。附加参数会传给监听器回调。
+- [`vm.$off([event,callback])`](https://cn.vuejs.org/v2/api/#vm-off)，移除自定义事件监听器。
+  - 没参数，移除所有。
+  - 只提供事件，移除该事件所有的监听器。
+  - 提供事件和回调，移除指定监听器。
+- [`vm.$once(event,callback)`](https://cn.vuejs.org/v2/api/#vm-once)，监听自定义事件，只触发一次，触发完成后移除监听器。
 
-    ```html
-    <!--  类绑定  -->
-    <!-- 1. 动态绑定一个class -->
-    <p :class="classNameA"></p>
+### slot插槽
 
-    <!-- 2. 根据boolean决定是否添加class，注意{} -->
-    <p :class="{classA：isClassA}"></p>
+> [插槽](https://cn.vuejs.org/v2/guide/components.html#%E4%BD%BF%E7%94%A8%E6%8F%92%E6%A7%BD%E5%88%86%E5%8F%91%E5%86%85%E5%AE%B9)，插槽可以看作是占位符，插槽内的内容只有**无要插入内容**时才会显示。
 
-    <!-- 3. 根据boolean切换class -->
-    <p :class="isClassA ? classNameA : classNameB"></p>
-
-    <!-- 4. 类数组 -->
-    <p :class="[classNameA,classNameB]">
-
-
-    <!--  样式绑定  -->
-    <!-- 1. 样式值 -->
-    <p :style="{color:colorName}"></p>
-
-    <!-- 2. 样式对象 -->
-    <p :style="styleObj"></p>
-    ```
-1. 其他指令
-    - `v-pre`，添加这个之后，会显示原始值。即`<p v-pre>{{msg}}</p>`会直接显示`{{msg}}`
-    - `v-cloak`，指定渲染完整个DOM后才进行显示。需要写在css样式里`[v-cloak] { display: none; }`，参考[TodoMVC](https://jsfiddle.net/yyx990803/4dr2fLb7/)
-    - `v-once`，数据后续更改不再渲染。
-
----
-
-## 全局API
-
-### 自定义指令
-
-> [自定义指令](https://cn.vuejs.org/v2/guide/custom-directive.html)，文档说的很好。
-
-需要注意的地方：
-
-1. 多个[钩子函数](https://cn.vuejs.org/v2/guide/custom-directive.html#%E9%92%A9%E5%AD%90%E5%87%BD%E6%95%B0)对应不同的生命周期。
-1. 如果只需要`bind`和`update`，可以直接将指令构造成一个函数，[函数简写](https://cn.vuejs.org/v2/guide/custom-directive.html#%E5%87%BD%E6%95%B0%E7%AE%80%E5%86%99)。
-1. 钩子函数传递的[参数](https://cn.vuejs.org/v2/guide/custom-directive.html#%E9%92%A9%E5%AD%90%E5%87%BD%E6%95%B0%E5%8F%82%E6%95%B0)有四个：
-    1. DOM节点`el`
-    1. 绑定信息`binding`
-    1. Vue虚拟节点`vnode`
-    1. 之前的虚拟节点`oldVnode`
-1. 指令函数可以接受所有合法的JavaScript表达式，所以，binding的值可以是一个[对象](https://cn.vuejs.org/v2/guide/custom-directive.html#%E5%AF%B9%E8%B1%A1%E5%AD%97%E9%9D%A2%E9%87%8F)
-
-### Vue.extend 扩展
-
-> 扩展实例构造器，预设了部分选项。所以可以直接使用new extendName()快速获取一个Vue实例，也可以基于该实例而不是`Vue`来进行扩展。
+`my-component`组件模板：
 
 ```html
-<div id="author"></div>
-
-<author></author>
-```
-
-```js
-
-var authorExtend = Vue.extend({
-  template: "<p><a :href='authorURL'>{{authorName}}</a></p>",
-  data() {
-    return {
-      authorName: 'GL',
-      authorURL: 'https://www.baidu.com'
-    }
-  }
-});
-
-// id的方式，会将div的内部替换
-new authorExtend().$mount("#author");
-
-// 标签的方式，会直接将该标签替换掉
-new authorExtend().$mount("author");
-```
-
-### Vue.set()
-
-Vue的data可以是外部的数据对象，也可以通过三种方式去修改数据。
-
-```js
-var outData = {
-  count: 0
-}
-
-var app = new Vue({
-  el: '#app',
-  data: outData,
-  methods: {
-    add() {
-        //直接操作外部对象
-        outData.count++;
-
-        //通过Vue实例操作对象，此处也可以是this
-        app.count++;
-
-        //通过Vue.set()操作对象。
-        Vue.set(outData, 'count', this.count + 1);
-    }
-  },
-})
-```
-
-但是因为JavaScript的限制：
-
-- 当你**利用索引直接设置**一个项时，vue不会为我们自动更新。
-- 当你**修改数组的长度**时，vue不会为我们自动更新。
-
-这时可以通过下面的方式通知数据改变：
-
-```js
-var outData = {
-  array: [1, 2, 3, 4, 5]
-}
-
-var app = new Vue({
-  el: '#app',
-  data: outData,
-  methods: {
-    add() {
-      Vue.set(outData.array, 0, 100);
-    }
-  },
-})
-```
-
-### Vue的生命周期
-
-> [Vue生命周期](https://cn.vuejs.org/v2/guide/instance.html#%E5%AE%9E%E4%BE%8B%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E9%92%A9%E5%AD%90)
-
-没什么可说的。对生命周期这玩意太熟悉了。使用如下：
-
-```js
-new Vue({
-  data: {
-    a: 1
-  },
-  created: function () {
-    // `this` 指向 vm 实例
-    console.log('a is: ' + this.a)
-  }
-})
-```
-
-### Vue模板
-
-> 直接将与Vue关联的HTML元素（*比如div*）替换为模板内容。
-
-1. 在构造器里写
-    ```js
-    var app = new Vue({
-        el: '#app',
-        data: {
-            msg: 'Hello Vue!',
-        },
-        template: `
-            <h1 style="color:red">{{msg}}</h1>
-        `
-    })
-    ```
-1. 在HTML里写。
-    ```html
-    <div id="app"></div>
-    <template id="template">
-        <h1 style="color:red">{{msg}}</h1>
-    </template>
-    ```
-    ```js
-    var app = new Vue({
-        el: '#app',
-        data: {
-            msg: 'Hello Vue!',
-        },
-        template: '#template'
-    })
-    ```
-1. 用`<script>`标签，注意`type`属性为Vue特定的`x-template`，使用和上边的`HTML`方式很相似。好处是之后可以写成外部文件，通过`src`引入。
-    ```html
-    <div id="app"></div>
-    <script type="x-template" id='template'>
-        <h1 style="color:red">{{ msg }}</h1>
-    </script>
-    ```
-
-### 组件 Component
-
-> [Vue组件](https://cn.vuejs.org/v2/guide/components.html)
-
-#### 组件的注册
-
-1. 全局注册，可用于所有的Vue实例
-    ```html
-    <div id="example">
-        <my-component></my-component>
-    </div>
-    ```
-    请在初始化之前注册组件：
-    ```js
-    // 注册
-    Vue.component('my-component', {
-        template: '<div>A custom component!</div>'
-    })
-
-    // 创建根实例
-    new Vue({
-        el: '#example'
-    })
-    ```
-    渲染结果：
-    ```html
-    <div id="example">
-        <div>A custom component!</div>
-    </div>
-    ```
-1. 局部注册，只可用于当前Vue实例
-    ```js
-    var Child = {
-        template: '<div>A custom component!</div>'
-    }
-
-    new Vue({
-        // ...
-        components: {
-            // <my-component> 将只在父组件模板中可用
-            'my-component': Child
-        }
-    })
-    ```
-
-#### 自定义组件属性
-
-1. 通过`props`实现，和`template`同级的一个属性。注意带有`-`的写法。
-    ```js
-    Vue.component('child', {
-    // 声明 props
-    props: ['myMessage'],
-    // 就像 data 一样，prop 也可以在模板中使用
-    // 同样也可以在 vm 实例中通过 this.message 来使用
-    template: '<span>{{ myMessage }}</span>'
-    })
-    ```
-
-    ```html
-    <child my-message="hello!"></child>
-    ```
-
-1. 传递一个对象的所有属性：
-    ```js
-    todo: {
-    text: 'Learn Vue',
-    isComplete: false
-    }
-    ```
-    然后：
-    ```html
-    <todo-item v-bind="todo"></todo-item>
-    ```
-    等价于：
-    ```html
-    <todo-item
-        v-bind:text="todo.text"
-        v-bind:is-complete="todo.isComplete"
-    ></todo-item>
-    ```
-
-#### 组件中引用自定义组件-`父子组件`
-
-和`template`同级的还有一个`components`属性。先注册好组件，然后直接引用即可。
-
-```js
-var child = {
-    template: 'balabala'
-}
-
-var father = {
-    template: '<child></child>',
-    components: {
-        'child': child
-    }
-}
-```
-
-#### 使用`<component>`动态绑定组件
-
-```js
-var vm = new Vue({
-  el: '#example',
-  data: {
-    currentView: 'home'
-  },
-  components: {
-    home: { /* ... */ },
-    posts: { /* ... */ },
-    archive: { /* ... */ }
-  }
-})
-```
-
-```html
-<component v-bind:is="currentView">
-  <!-- 组件在 vm.currentview 变化时改变！ -->
-</component>
-```
-
-实例，点击切换模板：
-
-```html
-<div id="app">
-    <component :is="currentComponent"></component>
-    <button @click="change">Change</button>
+<div>
+  <h2>我是子组件的标题</h2>
+  <slot>
+    只有在没有要分发的内容时才会显示。
+  </slot>
 </div>
 ```
 
-```js
-var component1 = {
-  template: `<h1 style='color:red;'>组件1</h1>`
-}
-var component2 = {
-  template: `<h1 style='color:blue;'>组件2</h1>`
-}
+父组件模板：
 
-var app = new Vue({
-  el: '#app',
-  data: {
-    currentComponent: 'Component1'
-  },
-  components: {
-    Component1: component1,
-    Component2: component2
-  },
-  methods: {
-    change() {
-      this.currentComponent = this.currentComponent == 'Component1' ? 'Component2' : 'Component1';
-    }
-  }
-})
+```html
+<div>
+  <h1>我是父组件的标题</h1>
+  <my-component>
+    <p>这是一些初始内容</p>
+    <p>这是更多的初始内容</p>
+  </my-component>
+</div>
 ```
+
+渲染结果：
+
+```html
+<div>
+  <h1>我是父组件的标题</h1>
+  <div>
+    <h2>我是子组件的标题</h2>
+    <p>这是一些初始内容</p>
+    <p>这是更多的初始内容</p>
+  </div>
+</div>
+```
+
+还可以插入到指定位置，称为[具名插槽](https://cn.vuejs.org/v2/guide/components.html#%E5%85%B7%E5%90%8D%E6%8F%92%E6%A7%BD)：
+
+`app-layout`组件模板：
+
+```html
+<div class="container">
+  <header>
+    <slot name="header"></slot>
+  </header>
+  <main>
+    <slot></slot>
+  </main>
+  <footer>
+    <slot name="footer"></slot>
+  </footer>
+</div>
+```
+
+父组件模板：
+
+```html
+<app-layout>
+  <h1 slot="header">这里可能是一个页面标题</h1>
+
+  <p>主要内容的一个段落。</p>
+  <p>另一个主要段落。</p>
+
+  <p slot="footer">这里有一些联系信息</p>
+</app-layout>
+```
+
+渲染结果：
+
+```html
+<div class="container">
+  <header>
+    <h1>这里可能是一个页面标题</h1>
+  </header>
+  <main>
+    <p>主要内容的一个段落。</p>
+    <p>另一个主要段落。</p>
+  </main>
+  <footer>
+    <p>这里有一些联系信息</p>
+  </footer>
+</div>
+```
+
+另外，[作用域插槽](https://cn.vuejs.org/v2/guide/components.html#%E4%BD%9C%E7%94%A8%E5%9F%9F%E6%8F%92%E6%A7%BD)先留着。
+
+## 过渡动画
+
+动画
+
+- [进入/离开 & 列表过渡](https://cn.vuejs.org/v2/guide/transitions.html)
+  - `<transition>`标签包裹，注意`name`和`mode`属性
+- [状态过渡](https://cn.vuejs.org/v2/guide/transitioning-state.html)
