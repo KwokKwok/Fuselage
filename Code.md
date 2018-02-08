@@ -1,194 +1,265 @@
-# Vue-router
+# Vuex学习记录
 
-重点：
+## Vue中通过全局Vue来通信（*Bus*）
 
-1. `<router-link to="path">链接名字</router-link>`
-1. `<router-view>`
-1. `components`目录下添加组件模板
-1. 修改`router/index.js`
-    1. `children`数组
+先写一个`bus.js`，只创建一个Vue实例并导出：
 
-参数传递：
+```js
+import Vue from 'vue';
 
-1. 通过`{{$route.name}}`可以访问路由页面的`name`属性
-1. 通过`params`对象，注意`:to`是绑定语法
-    ```html
-    <router-link :to="{name:'route-a',params:{username:'郭垒'}}">To RouteA</router-link>`
-    ```
-    ```html
-    <!--Vue文件内。-->
-    <template>
-        <div>
-            <p>{{$route.params.username}}</p>
-        </div>
-    </template>
-    ```
-1. 通过URL传值
-    ```html
-    <router-link to="/pages/1234/gl" >页面A</router-link>
-    ```
-    ```js
-    //router/index.js中设置页面路径
-    //path使用':'加参数名，可有多个参数
-    path: ':id(\\d+)/:name'
-    ```
-    ```html
-    <!--页面的.vue文件-->
-    <template>
-        <div>
-            <p>{{$route.params.id}}</p>
-            <p>{{$route.params.name}}</p>
-        </div>
-    </template>
-    ```
+export default new Vue;
+```
 
-单页面多**路由区域**
+然后写两个组件，里面都只有一个`count`字段，点击自己的时候，让对方的`count`加上自己的`count`值，并显示在界面上：
 
-> 再理解理解
+两个组件，导入`bus.js`中的实例：
 
 ```html
-<router-view/>
-<router-view name="route1"/>
-<router-view name="route2"/>
-```
+<template>
+  <div>
+      <h2 style="color:red;" @click="leftClick">{{count}}</h2>
+  </div>
+</template>
 
-```js
-components: {
-    default: Hi,
-    route1: routeA,
-    route2: routeB
-}
-```
-
-## 重定向和别名
-
-> [文档](https://router.vuejs.org/zh-cn/essentials/redirect-and-alias.html)
-
-### redirect 重定向
-
-1. 基本重定向，在`router/index.js`中写路由时，将`components`替换为`redirect：'path'`
-1. 重定向传参，可以利用`URL`的方式：
-    ```js
-    {
-        //以to访问的时候，可以获取到number值
-        path: 'redirect/:number(\\d+)',
-        name: 'redirect',
-        //以number值为路径做重定向，会重定向到下面的IdPage
-        redirect: ':number'
-    }, {
-        path: ':id(\\d+)',
-        component: IdPage
+<script>
+import bus from "@/bus.js";
+export default {
+  data() {
+    return {
+      count: 1
+    };
+  },
+  methods: {
+    leftClick() {
+      bus.$emit("leftClick", this.count);
     }
-    ```
-
-### alias 别名
-
-```js
-routes: [
-    { path: '/a', component: A, alias: '/b' }
-]
+  },
+  created() {
+    bus.$on("rightClick", count => {
+      this.count += count;
+    });
+  }
+};
+</script>
 ```
 
-/a 的别名是 /b，意味着，当用户访问 /b 时，URL 会保持为 /b，但是路由匹配则为 /a，就像用户访问 /a 一样。
+```html
+<template>
+  <div>
+      <h2 style="color:blue;" @click="rightClick">{{count}}</h2>
+  </div>
+</template>
 
-同样是页面改变：
+<script>
+import bus from "@/bus.js";
+export default {
+  data() {
+    return {
+      count: 1
+    };
+  },
+  methods: {
+    rightClick() {
+      bus.$emit("rightClick", this.count);
+    }
+  },
+  created() {
+    bus.$on("leftClick", count => {
+      this.count += count;
+    });
+  }
+};
+</script>
 
-- 重定向会修改路径
-- 别名路径不变
+```
 
-## 路由的mode和404页面
+`App.vue`写两个`<router-view>`:
 
-路由mode：
+```html
+<template>
+  <div id="app">
+    <router-view name="left" style="float:left;"/>
+    <router-view name="right" style="float:right;"/>
+  </div>
+</template>
+```
 
-- `history`，不显示`#`
-- `hash`，显示`#`
+`router/index.js`定义好：
 
 ```js
+import Left from '@/components/Left'
+import Right from '@/components/Right'
+
+Vue.use(Router)
+
 export default new Router({
-  mode: 'history',
   routes: [
     {
       path: '/',
-      name: 'HelloWorld',
-      component: HelloWorld
+      components: {
+        left: Left,
+        right: Right
+      }
     }
   ]
 })
 ```
 
-404页面：添加一个路由项，`path: '*'`即可。
+这就可以了。
 
-## 路由钩子函数
+---
 
-### 在路由注册文件中写
+## Vuex
 
-只能写`beforeEnter`
+Vuex是一个状态管理模式，可以用来集中**存储/管理** Vue应用的所有组件 的状态。
+
+需要先使用命令安装：
+
+```shell
+npm install vuex --save
+// yarn add vuex
+```
+
+下面把`state`、`getter`、`mutation`、`action`都用了，`module`，就先不用了，需要可以再看[文档](https://vuex.vuejs.org/zh-cn/modules.html)，就是可以将`store`的内容细化成更小的模块。
+
+首先注意两点：
+
+1. 模块方式需要调用`Vue.use(Vuex)`
+1. 操作`state`中的状态需要通过`mutation`，不能直接修改。
+1. `mutation`是同步的，异步需要使用`action`
+1. `getter`类似计算属性，通过`store.getters.<prop>`访问
+1. `...Map`对象展开运算符，可以通过**对象**或**数组**的方式使用，区别在于是否需要直接使用`store`中的名称。*需要导入。*
+
+在`store/index.js`中组装一个`store`导出：
 
 ```js
-export default new Router({
-  mode: 'history',
-  routes: [
-    {
-      path: '/',
-      name: 'HelloWorld',
-      component: HelloWorld,
-      beforeEnter(to, from, next) {
-        console.log(to); //to是一个对象，这里是当前的
-        console.log(from); //from也是一个对象，指示从哪来的
-        console.log(next); //next是一个函数，指示是否跳转
-        next(); //跳转，如果不写相当于next(false)，不跳转
-      }
+import Vue from 'vue'
+import Vuex from 'vuex'
+
+Vue.use(Vuex);
+
+const state = {
+    left: 1,
+    right_value: 1
+}
+
+const mutations = {
+    addLeft(state, n) {
+        state.left += n;
     },
+    addRight(state, n) {
+        state.right_value += n;
+    }
+}
+
+//类似计算属性，接受state作为第一个参数
+const getters = {
+    right: state => state.right_value,
+
+    // 也可以返回函数
+    // getTodoById: (state) => (id) => {
+    //     return state.todos.find(todo => todo.id === id)
+    // },
+
+    // 之后可以进行函数调用
+    // store.getters.getTodoById(2) // -> { id: 2, text: '...', done: false }
+}
+
+
+const actions = {
+    addLeftAsync(context, n) {
+        setTimeout(() => context.commit('addLeft', n), 500)
+    },
+    // addLeftAsync({commit}, n) {
+    //     setTimeout(() => commit('addLeft', n), 500)
+    // }
+}
+
+export default new Vuex.Store({
+    state, mutations, actions, getters
 })
 ```
 
-### 在路由页面写
+在`main.js`导入到根组件中：
 
-比如`Hi.vue`:
+> 通过在根实例中注册 store 选项，该 store 实例会注入到根组件下的所有子组件中，且子组件能通过 this.$store 访问到。
 
 ```js
-<script>
-export default {
-  name: "Hi",
-  data() {
-    return {
-      msg: "Hello router"
+import Vue from 'vue'
+import App from './App'
+import router from './router'
+import store from './store'
+
+Vue.config.productionTip = false
+
+/* eslint-disable no-new */
+
+var vue = new Vue({
+  el: '#app',
+  router,
+  store,
+  components: { App },
+  template: '<App/>'
+})
+```
+
+在子组件中访问：
+
+1. `Left.vue`
+    ```html
+    <template>
+        <div>
+            <h2 style="color:red;" @click="leftClick">{{count}}</h2>
+        </div>
+    </template>
+
+    <script>
+    import { mapState, mapMutations } from "vuex";
+    export default {
+        computed: {
+            // 自身的计算属性可以放在localComputed中
+            localComputed: {},
+            ...mapState({
+                count: "left"
+                // 相当于 count: state=>state.left
+            })
+        },
+        methods: {
+            leftClick() {
+                this.addRight(this.count);
+                // 相当于 this.$store.commit('addRight',this.count);
+            },
+            // 数组方式的map
+            ...mapMutations(["addRight"])
+        }
     };
-  },
-  beforeRouteEnter(to, from, next) {
-    console.log(to, from, next);
-    next();
-  },
-  beforeRouteLeave(to, from, next) {
-    console.log(to, from, next);
-    next();
-  }
-};
-</script>
-```
+    </script>
+    ```
+1. `Right.vue`
+    ```html
+    <template>
+        <div>
+            <h2 style="color:blue;" @click="rightClick">{{count}}</h2>
+        </div>
+    </template>
 
-注意：都是写了`next()`才能正常跳转。
-
-## 代码跳转
-
-```js
-<script>
-export default {
-  name: "App",
-  methods: {
-    go() {
-      //向前
-      this.$router.go(1);
-    },
-    back() {
-      //向后
-      this.$router.go(-1);
-    },
-    home() {
-      //跳转到指定页
-      this.$router.push("/");
-    }
-  }
-};
-</script>
-```
+    <script>
+    import { mapState, mapMutations, mapActions, mapGetters } from "vuex";
+    export default {
+        computed: {
+            ...mapGetters({
+                count: "right"
+            })
+        },
+        methods: {
+            ...mapActions({
+                add: "addLeftAsync"
+            }),
+            rightClick() {
+                this.add(this.count);
+                // 相当于 this.$store.dispatch('addLeftAsync',this.count);
+            }
+        }
+    };
+    </script>
+    ```
