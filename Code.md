@@ -1,265 +1,452 @@
-# 饥人谷三小时
+> 通过一些接触，Vue简单说就是管理指定界面(*`el`*)对应的数据(*`data`*)和行为(*`methods`*)，是一个典型的`ViewModel`实现。
 
-> [前端三小时速成指南](https://xiedaimala.com/courses/b8b4c00c-6798-4caf-8bfe-ba9fbb4c6d3d)
+## 内部指令
 
-## 声明前置
+1. `v-if`
+    ```html
+    <p v-if="!shouldShow">{{msg}}</p>
+    ```
+1. `v-show`
+    ```html
+    <p v-show="5>3">{{msg}}</p>
+    ```
+    > 注意`v-if`和`v-show`的差别，`v-if='false'`的情况下，元素不会被包含在`html`文档中，相比之下`v-show='false'`只是设置了`style="display: none;"`
+1. `v-for`
+    ```html
+    <p v-for="item in items">{{item.content}}</p>
 
-进入**新的执行环境**的时候，会将`var`、`function`声明的变量前置（*注意：只是声明，未赋值*），之后才开始执行代码。
+    <!--如果需要使用索引-->
+    <p v-for="(item,index) in items">{{item.content}}</p>
+    ```
+    ```js
+    //在data属性内
+    items: [
+      { content: '第一个元素' },
+      { content: '第二个元素' },
+      { content: '第三个元素' },
+    ]
+    ```
+    ```html
+    <!--生成结果-->
+    <p>第一个元素</p>
+    <p>第二个元素</p>
+    <p>第三个元素</p>
+    ```
+    > `v-for`可以理解成，把我们写的html作为一份模板，以数组的**每个子元素**作为**数据**生成多个HTML元素。
+1. 计算属性
+    ```html
+    <!--修改一下数据源-->
+    <p v-for="item in sortedItems">{{item}}</p>
+    ```
+    ```js
+    //修改数据源并实现倒叙排列数据
+    new Vue({
+        el: '#app',
+        data: {
+            items: [
+                1,5,2,6,3,4,7,10,9
+            ]
+        },
+        computed: {
+            sortedItems() {
+                return this.items.sort((a, b) => b - a)
+            }
+        }
+    })
+    ```
+1. `v-text`和`v-html`，如果按照上边的方式直接使用`{{}}`，则在对应的script没有被执行到的时候，会先显示`{{balabala}}`。这种情况可以通过指定属性解决，就是`v-text`和`v-html`解决。(*还有一种解决方式`v-cloak`，后续会提到*)
+    ```html
+    <!--使用v-text和使用{{}}效果一致，都是将内容解析为纯文本-->
+    <p v-for="item in items" v-text="item"></p>
+
+    <!--如果需要解析HTML文本，就不能使用{{}}，此时需要使用v-html-->
+    <p v-for="item in items" v-html="item"></p>
+    ```
+1. `v-model`，数据绑定。界面对数据的改动，会同步修改js中的属性值。适用于各种`input`。
+    > 使用上和`v-text`使用一样，可以理解为`v-model`是`v-text`加上了一个**修改事件监听**，在监听到改动的时候，会去修改对应的`data`中的值。
+
+    修饰符：
+    - `v-model.lazy`，失去焦点后改变。
+    - `v-model.number`，先输入数字，之后输入字符串则不计算。如果先输入字符串的话，就没卵用。
+    - `v-model.trim`，前后空格不计算。
+1. `v-on`事件监听，简写方式: `@`
+    ```html
+    <input type="text" v-model="count" @keyup.enter="onEnter">
+    </input>
+    <button @click="goUp">Up</button>
+    <button @click="goDown">Down</button>
+    ```
+    ```js
+    data: {
+        count: 0
+    },
+
+    //注意这个方法，event是原生的DOM事件
+    onEnter(event) {
+      event.target.blur();
+      setTimeout(() => {
+        alert(this.count);
+      }, 0);
+    },
+    goUp() {
+      this.count = Number(this.count) + 1;
+    },
+    goDown() {
+      this.count = Number(this.count) + 1;
+    }
+    ```
+1. `v-bind`，绑定标签上的属性。简写方式： `:`
+    ```html
+    <img :src="vueLogo">
+    ```
+    ```js
+    data: {
+        vueLogo: require("./assets/logo.png"),
+        //之后需要用到的
+        isClassA: false,
+        classNameA: 'classA',
+        classNameB: 'classB',
+        colorName: 'blue',
+        styleObj: {
+            color: 'red',
+            fontFamily: 'Century Gothic'
+        }
+    },
+    ```
+
+    ```html
+    <!--  类绑定  -->
+    <!-- 1. 动态绑定一个class -->
+    <p :class="classNameA"></p>
+
+    <!-- 2. 根据boolean决定是否添加class，注意{} -->
+    <p :class="{classA：isClassA}"></p>
+
+    <!-- 3. 根据boolean切换class -->
+    <p :class="isClassA ? classNameA : classNameB"></p>
+
+    <!-- 4. 类数组 -->
+    <p :class="[classNameA,classNameB]">
+
+
+    <!--  样式绑定  -->
+    <!-- 1. 样式值 -->
+    <p :style="{color:colorName}"></p>
+
+    <!-- 2. 样式对象 -->
+    <p :style="styleObj"></p>
+    ```
+1. 其他指令
+    - `v-pre`，添加这个之后，会显示原始值。即`<p v-pre>{{msg}}</p>`会直接显示`{{msg}}`
+    - `v-cloak`，指定渲染完整个DOM后才进行显示。需要写在css样式里`[v-cloak] { display: none; }`，参考[TodoMVC](https://jsfiddle.net/yyx990803/4dr2fLb7/)
+    - `v-once`，数据后续更改不再渲染。
 
 ---
 
-## 引用类型
+## 全局API
 
-> 其实赋值和拷贝都是值传递，只是引用类型变量的值是地址引用。
+### 自定义指令
 
-`===`判断引用类型时注意，引用类型变量存放的是堆中数据的引用地址。所以，即使看起来两个对象的内容一样，两个变量也不相等。
+> [自定义指令](https://cn.vuejs.org/v2/guide/custom-directive.html)，文档说的很好。
 
----
+需要注意的地方：
 
-## 函数作用域链
+1. 多个[钩子函数](https://cn.vuejs.org/v2/guide/custom-directive.html#%E9%92%A9%E5%AD%90%E5%87%BD%E6%95%B0)对应不同的生命周期。
+1. 如果只需要`bind`和`update`，可以直接将指令构造成一个函数，[函数简写](https://cn.vuejs.org/v2/guide/custom-directive.html#%E5%87%BD%E6%95%B0%E7%AE%80%E5%86%99)。
+1. 钩子函数传递的[参数](https://cn.vuejs.org/v2/guide/custom-directive.html#%E9%92%A9%E5%AD%90%E5%87%BD%E6%95%B0%E5%8F%82%E6%95%B0)有四个：
+    1. DOM节点`el`
+    1. 绑定信息`binding`
+    1. Vue虚拟节点`vnode`
+    1. 之前的虚拟节点`oldVnode`
+1. 指令函数可以接受所有合法的JavaScript表达式，所以，binding的值可以是一个[对象](https://cn.vuejs.org/v2/guide/custom-directive.html#%E5%AF%B9%E8%B1%A1%E5%AD%97%E9%9D%A2%E9%87%8F)
 
-- 执行的过程中，先从自己内部找变量
-- 如果找不到，再从**创建当前函数**所在的作用域出发，不断往上去找
+### Vue.extend 扩展
 
----
+> 扩展实例构造器，预设了部分选项。所以可以直接使用new extendName()快速获取一个Vue实例，也可以基于该实例而不是`Vue`来进行扩展。
 
-## 闭包
+```html
+<div id="author"></div>
 
-> 闭包，是函数和**被创建时**所在的词法环境的组合。
+<author></author>
+```
 
 ```js
-function person(name){
-    return function(){console.log(`${name} is handsome!`)}
-}
 
-var a = person("A")
-var b = person("B")
+var authorExtend = Vue.extend({
+  template: "<p><a :href='authorURL'>{{authorName}}</a></p>",
+  data() {
+    return {
+      authorName: 'GL',
+      authorURL: 'https://www.baidu.com'
+    }
+  }
+});
 
-a()
-b()
+// id的方式，会将div的内部替换
+new authorExtend().$mount("#author");
+
+// 标签的方式，会直接将该标签替换掉
+new authorExtend().$mount("author");
 ```
 
-```Console
-A is handsome!
-B is handsome!
-```
+### Vue.set()
 
----
-
-## 跨域
-
-- 同协议
-- 同域名
-- 同端口
-
-> 1. js发送ajax请求不同域。此处是由浏览器做的安全限制。就是说你的请求是可以发出去并得到回应，但是被浏览器拦截掉。
-> 1. 另外还有一种`iframe`不同域，浏览器会禁止页面获取或操作`iframe`里的DOM。这种情况下可以通过降域或者是`PostMessage`
-
-1. `JSONP`，需要后端配合包装数据。利用`script`标签发起请求，返回的内容，不再是数据，而是一个包含数据的方法调用。
-1. `CORS`，浏览器会将请求加上`Origin`请求头，后台会对其进行一系列处理，如果确定接受该请求，会再返回结果添加一个响应头`Access-Control-Allow-Origin`。
-
----
-
-## 面向对象
+Vue的data可以是外部的数据对象，也可以通过三种方式去修改数据。
 
 ```js
-function People(name){
-    this.name=name;
+var outData = {
+  count: 0
 }
 
-People.prototype.sayName = function(){
-    console.log(`My name is ${this.name}`)
-}
+var app = new Vue({
+  el: '#app',
+  data: outData,
+  methods: {
+    add() {
+        //直接操作外部对象
+        outData.count++;
 
-var p = new People('Daxing')
-p.sayName()
+        //通过Vue实例操作对象，此处也可以是this
+        app.count++;
+
+        //通过Vue.set()操作对象。
+        Vue.set(outData, 'count', this.count + 1);
+    }
+  },
+})
 ```
 
-`new`+函数A执行，会：
+但是因为JavaScript的限制：
 
-1. 创建一个空对象，对象的`__proto__`属性指向`A`的`prototype`(*所以`__proto__`这个属性和自身的`prototype`不一样，可以看作是作用域链中自身的上一级的`prototype`*)
-1. 如果返回值是基本类型，则会被忽略。
-1. 自身找不到的，会沿着`__proto__`向上找。
+- 当你**利用索引直接设置**一个项时，vue不会为我们自动更新。
+- 当你**修改数组的长度**时，vue不会为我们自动更新。
 
----
-
-## this
-
-总体来说，是谁调用，this指向谁。
-但是对于一个直接的方法调用：
-
-1. 严格模式下，this相当于undefined
-1. 非严格模式下，会自动将`undefined`和`null`转换为对`window`的引用
-
-`array[0]=function(){this}`，调用`array[0]()`，this指代array
-
-`func.bind(obj)`，则`func`内的`this`会指向`obj`
-
-箭头函数内是没有`this`的，只能借用上层的`this`
-
----
-
-## 继承
+这时可以通过下面的方式通知数据改变：
 
 ```js
-function Dialog(target) {
-    this.target = target
-}
-Dialog.prototype.show = function() {
-    console.log(this.target + ' show')
-}
-Dialog.prototype.hide = function() {
-    console.log(this.target + ' hide')
-}
-var dialog = new Dialog('body')
-dialog.show()
-
-function Message(target, name) {
-    Dialog.call(this, target)     //这句很重要
-    this.name = name
-}
-Message.prototype = Object.create(Dialog.prototype)   //这句更重要
-Message.prototype.success = function() {
-    console.log(this.name + ' success' )
+var outData = {
+  array: [1, 2, 3, 4, 5]
 }
 
-var msgBox = new Message('main', 'msg')
-msgBox.show()
-msgBox.success()
+var app = new Vue({
+  el: '#app',
+  data: outData,
+  methods: {
+    add() {
+      Vue.set(outData.array, 0, 100);
+    }
+  },
+})
 ```
 
-![继承原型图](https://cloud.hunger-valley.com/17-12-8/16780872.jpg)
+### Vue的生命周期
 
-`Dialog.call(this, target)`的作用是: 执行函数 `Dialog(target)`，执行的过程中里面遇到 `this` 换成当前传递的 `this`
+> [Vue生命周期](https://cn.vuejs.org/v2/guide/instance.html#%E5%AE%9E%E4%BE%8B%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E9%92%A9%E5%AD%90)
 
-`Object.create(Dialog.prototype)`的作用是：创建一个空对象，空对象的`__proto__`等于 `Dialog.prototype`
+没什么可说的。对生命周期这玩意太熟悉了。使用如下：
 
----
+```js
+new Vue({
+  data: {
+    a: 1
+  },
+  created: function () {
+    // `this` 指向 vm 实例
+    console.log('a is: ' + this.a)
+  }
+})
+```
 
-## Cookie和Session
+### Vue模板
 
-> 存储在浏览器的一些数据，根据设置的不同，在刷新或者浏览器关闭后依然存在。可以使用`document.cookie`查看正在浏览的网站的cookie
+> 直接将与Vue关联的HTML元素（*比如div*）替换为模板内容。
 
-使用方式：
+1. 在构造器里写
+    ```js
+    var app = new Vue({
+        el: '#app',
+        data: {
+            msg: 'Hello Vue!',
+        },
+        template: `
+            <h1 style="color:red">{{msg}}</h1>
+        `
+    })
+    ```
+1. 在HTML里写。
+    ```html
+    <div id="app"></div>
+    <template id="template">
+        <h1 style="color:red">{{msg}}</h1>
+    </template>
+    ```
+    ```js
+    var app = new Vue({
+        el: '#app',
+        data: {
+            msg: 'Hello Vue!',
+        },
+        template: '#template'
+    })
+    ```
+1. 用`<script>`标签，注意`type`属性为Vue特定的`x-template`，使用和上边的`HTML`方式很相似。好处是之后可以写成外部文件，通过`src`引入。
+    ```html
+    <div id="app"></div>
+    <script type="x-template" id='template'>
+        <h1 style="color:red">{{ msg }}</h1>
+    </script>
+    ```
 
-1. 通过js代码，保存一些不重要的信息。（*使用较少*）
-1. 更常见的是：服务端通过HTTP协议规定的`Set-Cookie`来让浏览器种下cookie。
+### 组件 Component
 
-一般浏览器cookie最大为4k，每次网络请求，都会带上合适的cookie。所以也会对传输效率有影响。（*静态资源使用CDN，这样请求静态资源的时候，就不会携带上页面的cookie了，这也是一个好处*）
+> [Vue组件](https://cn.vuejs.org/v2/guide/components.html)
 
-cookie参数：
+#### 组件的注册
 
-- `path`，发挥作用的路径。匹配路径才会发送cookie
-- `expires`和`maxAge`，指示cookie什么时候过期。一个是绝对的时间，一个是相对的时间。不指定时，会产生session cookie，用户关闭浏览器即被清除，一般用于保存session的session_id。
-- `secure`，指示是否仅适用于`HTTPS`
-- `httpOnly`，为True时，浏览器不允许脚本操作修改cookie。一般都应该设置为true，避免xss攻击拿到cookie。
+1. 全局注册，可用于所有的Vue实例
+    ```html
+    <div id="example">
+        <my-component></my-component>
+    </div>
+    ```
+    请在初始化之前注册组件：
+    ```js
+    // 注册
+    Vue.component('my-component', {
+        template: '<div>A custom component!</div>'
+    })
 
-session机制：
+    // 创建根实例
+    new Vue({
+        el: '#example'
+    })
+    ```
+    渲染结果：
+    ```html
+    <div id="example">
+        <div>A custom component!</div>
+    </div>
+    ```
+1. 局部注册，只可用于当前Vue实例
+    ```js
+    var Child = {
+        template: '<div>A custom component!</div>'
+    }
 
-1. 用户登陆
-1. 服务器验证通过，产生一个session保存起来，将session_id通过`Set-Cookie`保存到用户浏览器。
-1. 用户刷新，发起网络请求并携带Cookie
-1. 服务器通过`session_id`识别到用户。
+    new Vue({
+        // ...
+        components: {
+            // <my-component> 将只在父组件模板中可用
+            'my-component': Child
+        }
+    })
+    ```
 
----
+#### 自定义组件属性
 
-## Web安全
+1. 通过`props`实现，和`template`同级的一个属性。注意带有`-`的写法。
+    ```js
+    Vue.component('child', {
+    // 声明 props
+    props: ['myMessage'],
+    // 就像 data 一样，prop 也可以在模板中使用
+    // 同样也可以在 vm 实例中通过 this.message 来使用
+    template: '<span>{{ myMessage }}</span>'
+    })
+    ```
 
-1. 传输安全
-1. 浏览器安全
-1. 传统攻击
+    ```html
+    <child my-message="hello!"></child>
+    ```
 
-### 传输安全
+1. 传递一个对象的所有属性：
+    ```js
+    todo: {
+    text: 'Learn Vue',
+    isComplete: false
+    }
+    ```
+    然后：
+    ```html
+    <todo-item v-bind="todo"></todo-item>
+    ```
+    等价于：
+    ```html
+    <todo-item
+        v-bind:text="todo.text"
+        v-bind:is-complete="todo.isComplete"
+    ></todo-item>
+    ```
 
-使用HTTP是不安全的。传输过程中可以对你的数据做任何修改。
+#### 组件中引用自定义组件-`父子组件`
 
-而使用HTTPS是安全的，底层使用非对称加密。但申请HTTPS需要在国际认证的CA机构填写网站信息，而这些CA机构也是有上层的CA机构。这样，浏览器验证一个网站时通过CA链逐级验证，浏览器内置根CA和顶级CA的证书。也可以自己伪造HTTPS，但不会通过验证。
+和`template`同级的还有一个`components`属性。先注册好组件，然后直接引用即可。
 
-### XSS攻击
+```js
+var child = {
+    template: 'balabala'
+}
 
-1. 用户输入做验证。
-1. 慎重用`eval`。
+var father = {
+    template: '<child></child>',
+    components: {
+        'child': child
+    }
+}
+```
 
-### CSRF
+#### 使用`<component>`动态绑定组件
 
-1. 提交字段的时候多加一个Token
-1. 服务器生成一个字段，嵌入到一个隐藏的输入框内。这时候，提交的时候验证字段。
+```js
+var vm = new Vue({
+  el: '#example',
+  data: {
+    currentView: 'home'
+  },
+  components: {
+    home: { /* ... */ },
+    posts: { /* ... */ },
+    archive: { /* ... */ }
+  }
+})
+```
 
----
+```html
+<component v-bind:is="currentView">
+  <!-- 组件在 vm.currentview 变化时改变！ -->
+</component>
+```
 
-## 前端性能优化
+实例，点击切换模板：
 
-1. 加载
-1. 体验
+```html
+<div id="app">
+    <component :is="currentComponent"></component>
+    <button @click="change">Change</button>
+</div>
+```
 
-### 加载
+```js
+var component1 = {
+  template: `<h1 style='color:red;'>组件1</h1>`
+}
+var component2 = {
+  template: `<h1 style='color:blue;'>组件2</h1>`
+}
 
-1. 网络
-    - 接入高带宽的网络
-    - 静态资源放CDN
-1. 数据体积小
-    - 服务端压缩
-    - 服务端接口多样
-    - 图片压缩、多样性
-    - css等压缩
-1. 数据量小
-    - 资源合并，减少请求
-1. 服务器处理速度
-1. 重复利用
-    - 公用资源合并
-    - 缓存
-
-### 体验
-
-1. 懒加载，只加载当前必要的东西。
-    - 先把页面加载出来，然后再加载别的资源和逻辑。
-    - 轮播只预先加载一个图片。
-1. 不要卡顿。
-    - 动画不要卡，优先使用CSS3的动画。使用3D可以调用GPU。位移使用Transform>Left>margin
-
----
-
-## HTTP
-
-1. HTTP报文
-1. HTTP状态码
-1. HTTP缓存
-
-### HTTP报文
-
-1. 对报文进行描述的起始行
-    - 请求体首行`GET \ HTTP/1.1` -> `<method><request-URL><version>`
-    - 响应体首行`HTTP/1.0 200 OK` -> `<version><status><reason-phrase>`
-1. 包含属性的首部块
-    - 通用首部
-    - 请求特有的首部
-    - 响应特有的首部
-1. 可选的包含数据的主体
-1. **请求**方法：
-    - `GET`，获取资源
-    - `HEAD`，不获取资源，只获取头部。主要用于获取相关信息，比如缓存时查看内容是否被修改。
-    - `PUT`，和`GET`相反，想要往服务器写入信息。类似于修改。
-    - `POST`，向服务器发送数据。
-    - `TRACE`，测试路由
-    - `DELETE`，删除。
-    - `OPTIONS`，请求服务器告知支持的功能。
-
-### 状态码
-
-1. 100-199，http1.1新增的。指示客户端做出反应
-1. 200-299，请求成功
-1. 300-399，资源重定位
-1. 400-499，客户端错误，比如400请求语法错误，404没有请求资源
-1. 500-599，服务器错误。
-
-### 缓存
-
-1. `Expires`，客户端和服务器可能时间不一致，可使用`maxAge`控制。
-1. `Cache-Control`
-    - `Public`，响应可被任何中间节点缓存
-    - `Private`，不允许中间节点缓存。
-    - `no-cache`，不适用`Cache-Control`，可能使用别的机制。
-    - `no-store`，不做缓存
-    - `max-age`，表示当前资源有效时间，单位为秒。
-1. `ETag`，比如发起请求之后，会返回对文件的编码信息比如`ETag`。只要文件不改变，`ETag`就不会改变。这样，浏览器发请求的时候带上`ETag`，服务器检查`ETag`是否一致。一致则表示文件未修改，返回不含资源的短消息 比如`304`（*缓存文件仍可用*），如果不一样则返回新的资源和新的`ETag`。
-1. `Last-Modified/If-Modified-Since`类似`ETag`，缺点只能精确到秒，优点是消耗较小。机制一致。
+var app = new Vue({
+  el: '#app',
+  data: {
+    currentComponent: 'Component1'
+  },
+  components: {
+    Component1: component1,
+    Component2: component2
+  },
+  methods: {
+    change() {
+      this.currentComponent = this.currentComponent == 'Component1' ? 'Component2' : 'Component1';
+    }
+  }
+})
+```
