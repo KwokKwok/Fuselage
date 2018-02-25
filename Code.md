@@ -33,9 +33,10 @@
 
 ### 截图
 
+
 印象笔记和Sololearn截图
-![印象笔记](http://oxfvz89wv.bkt.clouddn.com/18-2-25/49705341.jpg)
-![Sololearn](http://oxfvz89wv.bkt.clouddn.com/18-2-25/4860880.jpg)
+
+![印象笔记和Sololearn截图](http://oxfvz89wv.bkt.clouddn.com/18-2-25/72398342.jpg)
 
 ---
 
