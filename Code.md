@@ -26,7 +26,7 @@
 
 - Markdown
 - 双拼
-- 近三年一直科学上网
+- 从15年开始一直持续科学上网
 - 各种开发环境，熟练使用Visual Studio（C#/XAML），Visual Studio Code（Web/Python），IDEA和Android Studio（Java/Kotlin/Android开发相关）
 
 ---
